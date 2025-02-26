@@ -29,7 +29,8 @@ export default async function handler(
       userId: decodedToken.uid,
       token: token
     });
-  } catch (error) {
+  } catch (_error) {
+    console.error('Protected API error:', _error);
     return res.status(401).json({ error: 'Not authorized' });
   }
-} 
+}   
