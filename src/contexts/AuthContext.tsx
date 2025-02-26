@@ -35,11 +35,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       await signInWithEmailAndPassword(auth, email, password);
       return true;
-    } catch (error: any) {
-      const message = error.code === 'auth/invalid-credential' 
-        ? 'Invalid email or password'
-        : 'An error occurred during sign in';
-      setError(message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        const message = (error as { code?: string }).code === 'auth/invalid-credential'
+          ? 'Invalid email or password'
+          : 'An error occurred during sign in';
+        setError(message);
+      } else {
+        setError('An error occurred during sign in');
+      }
       return false;
     }
   };
@@ -50,7 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       return true;
-    } catch (error: any) {
+    } catch (_error: unknown) {
+      console.error('Google sign in error:', _error);
       setError('An error occurred during Google sign in');
       return false;
     }
@@ -61,7 +66,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       await createUserWithEmailAndPassword(auth, email, password);
       return true;
-    } catch (error: any) {
+    } catch (_error: unknown) {
+      console.error('Registration error:', _error);
       setError('An error occurred during registration');
       return false;
     }
@@ -70,8 +76,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await signOut(auth);
-    } catch (error: any) {
+    } catch (_error: unknown) {
       setError('An error occurred during logout');
+      console.error('Logout error:', _error);
     }
   };
 

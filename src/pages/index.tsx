@@ -28,8 +28,9 @@ export default function Home() {
       if (success) {
         resetForm();
       }
-    } catch (error) {
+    } catch (_error: unknown) {
       setLocalError('An unexpected error occurred');
+      console.error('Email auth error:', _error);
     } finally {
       setIsLoading(false);
     }
@@ -43,8 +44,9 @@ export default function Home() {
       setLocalError('');
       clearError();
       await signInWithGoogle();
-    } catch (error) {
+    } catch (_error: unknown) {
       setLocalError('An unexpected error occurred');
+      console.error('Google sign in error:', _error);
     } finally {
       setIsLoading(false);
     }
