@@ -1,114 +1,115 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { useAuth } from '@/contexts/AuthContext';
+import { useState } from 'react';
+import { ErrorMessage } from '@/components/auth/ErrorMessage';
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
+import { EmailAuthForm } from '@/components/auth/EmailAuthForm';
 
 export default function Home() {
-  return (
-    <div
-      className={`${geistSans.variable} ${geistMono.variable} grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]`}
-    >
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/pages/index.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const { user, error: authError, signInWithEmail, signInWithGoogle, registerWithEmail, logout, clearError } = useAuth();
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [localError, setLocalError] = useState('');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const handleEmailAuth = async (values: { email: string; password: string }, { resetForm }: { resetForm: () => void }) => {
+    if (isLoading) return;
+
+    try {
+      setIsLoading(true);
+      setLocalError('');
+      clearError();
+
+      let success;
+      if (isRegistering) {
+        success = await registerWithEmail(values.email, values.password);
+      } else {
+        success = await signInWithEmail(values.email, values.password);
+      }
+
+      if (success) {
+        resetForm();
+      }
+    } catch (error) {
+      setLocalError('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    if (isLoading) return;
+
+    try {
+      setIsLoading(true);
+      setLocalError('');
+      clearError();
+      await signInWithGoogle();
+    } catch (error) {
+      setLocalError('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const error = localError || authError;
+
+  return (
+    <div className="min-h-screen bg-[#F8F9FF] flex items-center justify-center p-4">
+      <main className="w-full max-w-[400px] bg-white rounded-2xl shadow-sm p-8">
+
+        {error && (
+          <ErrorMessage 
+            error={error} 
+            onDismiss={() => {
+              setLocalError('');
+              clearError();
+            }} 
+          />
+        )}
+
+        {user ? (
+          <div className="flex flex-col gap-4">
+            <p className="text-center text-black">Welcome, {user.email}</p>
+            <button
+              onClick={logout}
+              className="w-full bg-blue-500 text-white rounded-lg py-3 hover:bg-blue-600 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
+        ) : (
+          <>
+            <EmailAuthForm 
+              isLoading={isLoading}
+              isRegistering={isRegistering}
+              onSubmit={handleEmailAuth}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => setIsRegistering(!isRegistering)}
+                className="text-blue-500 hover:text-blue-600 text-sm"
+              >
+                {isRegistering ? 'Already have an account? Sign in' : 'Need an account? Register'}
+              </button>
+            </div>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-gray-500">or continue with Google</span>
+              </div>
+            </div>
+
+            <GoogleSignInButton 
+              onClick={handleGoogleSignIn}
+              isLoading={isLoading}
+            />
+          </>
+        )}
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
